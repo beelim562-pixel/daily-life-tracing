@@ -455,8 +455,8 @@
             },
             e: {
                 strokes: [
-                    [{ x: 34, y: 51.2 }, { x: 50, y: 51.2 }, { x: 66, y: 51.2 }],
-                    sampleCCW(50, 51.2, 16, 0, Math.PI * 1.55, 22)
+                    [{ x: 42, y: 52 }, { x: 52, y: 52 }, { x: 62, y: 52 }],
+                    sampleCCW(50, 52, 12, 0, Math.PI * 1.7, 24)
                 ]
             },
             f: {
@@ -742,21 +742,33 @@
         }
 
         function buildWordTemplate(word) {
-            const n = word.length;
-            const usable = 94;
-            const aspect = (canvasW > 8 && canvasH > 8) ? (canvasW / canvasH) : 3.4;
-            const sy = 0.94;
-            const comicSlot = (0.48 * 0.6 / aspect) * 100;
-            const slot = n * comicSlot > usable ? usable / n : comicSlot;
-            const sx = (slot * 0.84) / 54;
-            const wordW = n * slot;
-            const x0 = 50 - wordW / 2;
+            const chars = [...word];
+            const letterCount = chars.filter(ch => ch !== ' ' && LETTER_TEMPLATES[ch]).length;
+            const n = Math.max(1, letterCount);
+            const usable = 92;
+            const minSlotPx = Math.max(76, Math.min(canvasH * 0.85, 128));
+            let slot = (minSlotPx / Math.max(canvasW, 1)) * 100;
+            if (n * slot > usable) slot = usable / n;
+            const aspect = canvasW / Math.max(canvasH, 1);
+            let sx = (slot * 0.9) / 36;
+            let sy = sx * aspect;
+            if (sy > 0.95) {
+                sy = 0.95;
+                sx = sy / aspect;
+            }
+            const gap = slot * 0.4;
+            const extra = chars.length - letterCount;
+            let x = 50 - (n * slot + extra * gap) / 2;
             const strokes = [];
-            [...word].forEach((ch, i) => {
+            chars.forEach(ch => {
                 const t = LETTER_TEMPLATES[ch];
-                if (!t) return;
-                const dx = x0 + (i + 0.5) * slot - 50;
+                if (ch === ' ' || !t) {
+                    x += gap;
+                    return;
+                }
+                const dx = x + slot / 2 - 50;
                 t.strokes.forEach(st => strokes.push(offsetStroke(st, dx, sx, sy)));
+                x += slot;
             });
             return { strokes };
         }
@@ -785,12 +797,15 @@
             if (wide) {
                 card.classList.remove('aspect-square', 'max-w-[420px]');
                 card.classList.add('w-full', WIDE_MAX);
-                card.style.aspectRatio = '3.7 / 1';
+                const phone = window.innerWidth < 768;
+                card.style.aspectRatio = phone ? '1.6 / 1' : '2.1 / 1';
                 card.style.width = '100%';
+                card.style.maxHeight = phone ? '54vh' : '58vh';
             } else {
                 card.classList.add('aspect-square', 'max-w-[420px]');
                 card.classList.remove('w-full', WIDE_MAX);
                 card.style.aspectRatio = '';
+                card.style.maxHeight = '';
             }
         }
 
@@ -1097,7 +1112,7 @@
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             ctx.strokeStyle = penColor;
-            ctx.lineWidth = currentStage === 2 ? 12 : 16;
+            ctx.lineWidth = currentStage === 2 ? 16 : 16;
             ctx.beginPath();
             for (let i = 0; i < userPoints.length; i++) {
                 const pt = userPoints[i];
@@ -1473,8 +1488,8 @@
                 currentLetter = glyphs[0];
                 fontTrace = false;
                 activeTemplate = buildWordTemplate(w.word);
-                strokeRadius = 9;
-                hitRadius = 24;
+                strokeRadius = 18;
+                hitRadius = 42;
             } else {
                 fontTrace = false;
                 currentLetter = glyphs[letterIndex] || glyphs[0];
